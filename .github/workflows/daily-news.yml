@@ -1,0 +1,33 @@
+name: Daily News Agent Pipeline
+
+on:
+  schedule:
+    # 每天 UTC 23:00 執行，相當於台北時間 (UTC+8) 早上 7:00
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 允許從 GitHub 網頁手動觸發
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Run News Master
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+        run: node src/news_master.js

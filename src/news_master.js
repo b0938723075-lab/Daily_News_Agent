@@ -75,9 +75,9 @@ export async function runNewsMaster() {
     console.log("📡 正在透過 Tavily 搜尋精選大分類...");
     const todayStr = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
     let [domesticRaw, intlRaw, domesticSecondaryRaw, intlSecondaryRaw] = await Promise.all([
-        fetchTavily(`台灣 國內 焦點大事 權威報導 新聞頭條 ${todayStr}`, 10),
+        fetchTavily(`site:.tw 台灣 在地新聞 國內焦點大事 新聞頭條 ${todayStr}`, 10),
         fetchTavily(`全球 國際 焦點大事 權威報導 新聞頭條 ${todayStr}`, 10),
-        fetchTavily(`台灣 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 10),
+        fetchTavily(`site:.tw 台灣在地 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 10),
         fetchTavily(`全球 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 10)
     ]);
     
@@ -132,8 +132,8 @@ export async function runNewsMaster() {
       }
       
       ⚠️ 新聞過濾權威準則（今天是 ${todayStr}，僅限處理當日新聞，嚴格剔除所有過期舊聞）：
-      1. 全面強制繁體中文：所有新聞的標題與摘要都必須 100% 翻譯為「繁體中文」，絕對不可以出現英文或簡體字！
-      2. 【國內外重點各3則】：國內挑 3 則，國外挑 3 則。沒有大新聞就拿次要話題補。
+      1. 🔴 全面強制繁體中文翻譯：【非常重要】不管 Tavily 抓回來的新聞是英文還是哪國語言，你在輸出 \`line_telegram_report\` 時，裡面的「每一個字」都必須 100% 翻譯成繁體中文！絕對不允許出現任何一段英文原文！
+      2. 【國內外重點各3則】：國內（必須確保是發生在台灣本地的新聞）挑 3 則，國外挑 3 則。沒有大新聞就拿次要話題補。
       3. 【超級白話文】：白話總結必須非常口語、直接，不能有生硬的文言文或新聞術語，讓忙碌的人一秒看懂。
       4. 氣象走勢 labels 請務必幫星期補上精確的「月/日日期」(例如: "一 (4/6)")。溫度務必要換算成亞洲觀看的「攝氏溫度 (°C)」。
       

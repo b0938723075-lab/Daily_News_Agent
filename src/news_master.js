@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { scrapeYahooTWDirect } from './scrapers/yahoo-tw.js';
+import Parser from 'rss-parser';
 
 dotenv.config();
 
@@ -75,14 +75,19 @@ export async function runNewsMaster() {
   try {
     console.log("📡 正在透過 Tavily 搜尋精選大分類...");
     const todayStr = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-    console.log("📡 正在透過 Yahoo 奇摩新聞抓取最在地的台灣與國際頭條...");
-    const yahooNews = await scrapeYahooTWDirect(['top', 'politics', 'world', 'entertainment'], 10);
+    console.log("📡 正在透過 Yahoo 奇摩新聞 RSS 抓取最在地的台灣與國際頭條...");
+    const parser = new Parser();
+    const [domesticRss, intlRss, secondaryRss] = await Promise.all([
+        parser.parseURL('https://tw.news.yahoo.com/rss/politics'),
+        parser.parseURL('https://tw.news.yahoo.com/rss/world'),
+        parser.parseURL('https://tw.news.yahoo.com/rss/society')
+    ]);
     
-    // 將 Yahoo 新聞對應到現有變數
-    let domesticRaw = yahooNews.filter(a => a.category === 'top' || a.category === 'politics').map(a => ({ title: a.title, url: a.link, content: a.title }));
-    let intlRaw = yahooNews.filter(a => a.category === 'world').map(a => ({ title: a.title, url: a.link, content: a.title }));
-    let domesticSecondaryRaw = yahooNews.filter(a => a.category === 'entertainment').map(a => ({ title: a.title, url: a.link, content: a.title }));
-    let intlSecondaryRaw = await fetchTavily(`全球 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 5);
+    // 將 RSS 新聞對應到現有變數
+    let domesticRaw = domesticRss.items.map(a => ({ title: a.title, url: a.link, content: a.contentSnippet || a.title }));
+    let intlRaw = intlRss.items.map(a => ({ title: a.title, url: a.link, content: a.contentSnippet || a.title }));
+    let domesticSecondaryRaw = secondaryRss.items.map(a => ({ title: a.title, url: a.link, content: a.contentSnippet || a.title }));
+    let intlSecondaryRaw = []; // 若無國外次要則留空
     
     // 氣象署即時資料
     let cwaToday = "無即時氣象", cwaWeekly = "無一週氣象";

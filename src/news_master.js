@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { scrapeYahooTWDirect } from './scrapers/yahoo-tw.js';
 
 dotenv.config();
 
@@ -74,12 +75,14 @@ export async function runNewsMaster() {
   try {
     console.log("📡 正在透過 Tavily 搜尋精選大分類...");
     const todayStr = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-    let [domesticRaw, intlRaw, domesticSecondaryRaw, intlSecondaryRaw] = await Promise.all([
-        fetchTavily(`site:.tw 台灣 在地新聞 國內焦點大事 新聞頭條 ${todayStr}`, 10),
-        fetchTavily(`全球 國際 焦點大事 權威報導 新聞頭條 ${todayStr}`, 10),
-        fetchTavily(`site:.tw 台灣在地 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 10),
-        fetchTavily(`全球 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 10)
-    ]);
+    console.log("📡 正在透過 Yahoo 奇摩新聞抓取最在地的台灣與國際頭條...");
+    const yahooNews = await scrapeYahooTWDirect(['top', 'politics', 'world', 'entertainment'], 10);
+    
+    // 將 Yahoo 新聞對應到現有變數
+    let domesticRaw = yahooNews.filter(a => a.category === 'top' || a.category === 'politics').map(a => ({ title: a.title, url: a.link, content: a.title }));
+    let intlRaw = yahooNews.filter(a => a.category === 'world').map(a => ({ title: a.title, url: a.link, content: a.title }));
+    let domesticSecondaryRaw = yahooNews.filter(a => a.category === 'entertainment').map(a => ({ title: a.title, url: a.link, content: a.title }));
+    let intlSecondaryRaw = await fetchTavily(`全球 熱門新聞 網路流量 高討論度 次要話題 ${todayStr}`, 5);
     
     // 氣象署即時資料
     let cwaToday = "無即時氣象", cwaWeekly = "無一週氣象";
